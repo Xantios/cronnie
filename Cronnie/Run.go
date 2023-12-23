@@ -3,7 +3,6 @@ package Cronnie
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -43,7 +42,7 @@ func (ci *Instance) Run() error {
 			return err
 		}
 
-		fmt.Printf("Got item from crash-recovery. %#v\n", item)
+		ci.logger.Printf("Got item from crash-recovery. %#v\n", item)
 		jobChannel <- item
 	}
 
@@ -70,7 +69,7 @@ func (ci *Instance) Run() error {
 		item := JobModel{}
 		e := json.Unmarshal([]byte(notification.Payload), &item)
 		if e != nil {
-			fmt.Printf("Malformed event :: [[%s]] error :: %s\n", notification.Payload, e)
+			ci.logger.Printf("Malformed event :: [[%s]] error :: %s\n", notification.Payload, e)
 			continue
 		}
 
@@ -83,13 +82,13 @@ func (ci *Instance) queueHandler() {
 	for {
 		select {
 		case job := <-jobChannel:
-			fmt.Printf("Got job :: %#v\n", job)
+			ci.logger.Printf("Got job :: %#v\n", job)
 
 			ran := ci.executeRunnerFunction(job.Function, job.Arguments)
 			if !ran {
-				fmt.Printf("Job failed\n")
+				ci.logger.Printf("Error while running job. \n")
 			} else {
-				fmt.Printf("Ran job\n")
+				ci.logger.Printf("Successfully ran job. \n")
 			}
 		}
 	}

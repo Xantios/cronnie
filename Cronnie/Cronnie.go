@@ -3,12 +3,14 @@ package Cronnie
 import (
 	"context"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"log"
 )
 
 type Instance struct {
 	ctx    context.Context
 	conn   *pgxpool.Pool
 	jobMap map[string]Job
+	logger *log.Logger
 }
 
 func New(config *Config) (Instance, error) {
@@ -27,6 +29,13 @@ func New(config *Config) (Instance, error) {
 		instance.conn = conn
 	} else {
 		instance.conn = config.Connection
+	}
+
+	// Logger
+	if config.Logger == nil {
+		instance.logger = log.Default()
+	} else {
+		instance.logger = config.Logger
 	}
 
 	// Run Seeder

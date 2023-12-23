@@ -3,6 +3,7 @@ package main
 import (
 	"Cronnie/Cronnie"
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -18,11 +19,15 @@ func main() {
 
 	fmt.Println("This is an example on how to use Cronnie")
 
+	// Craft a logger which we (optionally) can pass around
+	logger := log.Default()
+
 	config := &Cronnie.Config{
 		Uri: "host=db user=postgres password=EcArEmp7YTDqCk8Yl61RQEZnLF9oXnjE dbname=app port=5432 sslmode=disable TimeZone=Europe/Amsterdam",
 		JobMap: map[string]Cronnie.Job{
 			"example": ExampleJobHandler,
 		},
+		Logger: logger,
 	}
 
 	cron, err := Cronnie.New(config)
