@@ -1,0 +1,33 @@
+services:
+
+  app:
+    build:
+      context: .
+    ports:
+      - 4000:4000
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16.1-alpine3.19
+    user: postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=app
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=EcArEmp7YTDqCk8Yl61RQEZnLF9oXnjE
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:
+
