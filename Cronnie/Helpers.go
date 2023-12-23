@@ -3,10 +3,9 @@ package Cronnie
 import (
 	"context"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func Create(conn *pgxpool.Pool, functionName string, arguments map[string]string) error {
+func (ci *Instance) Create(functionName string, arguments map[string]string) error {
 	ctx := context.Background()
 	//language=postgresql
 	query := `
@@ -15,12 +14,12 @@ func Create(conn *pgxpool.Pool, functionName string, arguments map[string]string
 		VALUES 
 		    (DEFAULT, $1, $2, now(), null);`
 
-	_, e := conn.Query(ctx, query, functionName, arguments)
+	_, e := ci.conn.Query(ctx, query, functionName, arguments)
 	return e
 }
 
-func GetJobs(conn *pgxpool.Pool) (pgx.Rows, error) {
+func (ci *Instance) GetJobs() (pgx.Rows, error) {
 	ctx := context.Background()
-	rows, err := conn.Query(ctx, "SELECT * FROM jobs WHERE completed_at is null")
+	rows, err := ci.conn.Query(ctx, "SELECT * FROM jobs WHERE completed_at is null")
 	return rows, err
 }

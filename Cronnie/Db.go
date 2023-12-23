@@ -2,41 +2,22 @@ package Cronnie
 
 import (
 	"context"
-	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func SetupDb(host, username, password, dbname string, port int, ssl bool, timezone string) (*pgxpool.Pool, error) {
-
-	sslMode := "disable"
-	if ssl {
-		sslMode = "enable"
-	}
-
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=%s", host, username, password, dbname, port, sslMode, timezone)
-
-	ctx := context.Background()
-	conn, err := pgxpool.New(ctx, dsn)
-	if err != nil {
-		return nil, err
-	}
-
-	return conn, Seed(conn)
-}
-
-func Seed(conn *pgxpool.Pool) error {
+func (ci *Instance) Seed() error {
 	var e error
-	e = createJobsTable(conn)
+	e = createJobsTable(ci.conn)
 	if e != nil {
 		return e
 	}
 
-	e = createNotificationProcedure(conn)
+	e = createNotificationProcedure(ci.conn)
 	if e != nil {
 		return e
 	}
 
-	e = createNotificationTrigger(conn)
+	e = createNotificationTrigger(ci.conn)
 	if e != nil {
 		return e
 	}

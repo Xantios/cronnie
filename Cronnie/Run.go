@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type JobModel struct {
@@ -23,16 +22,16 @@ func init() {
 	jobChannel = make(chan JobModel, 256)
 }
 
-func Run(pool *pgxpool.Pool) error {
+func (ci *Instance) Run() error {
 
 	ctx := context.Background()
 
 	// Convert pool connection to singular connection
-	conf := pool.Config()
+	conf := ci.conn.Config()
 	conn, e := pgx.Connect(ctx, conf.ConnString())
 
 	// Populate cache if recovering from crash
-	jobs, err := GetJobs(pool)
+	jobs, err := ci.GetJobs()
 	if err != nil {
 		return err
 	}
@@ -59,7 +58,7 @@ func Run(pool *pgxpool.Pool) error {
 	}
 
 	// Run queueHandler
-	go queueHandler()
+	go ci.queueHandler()
 
 	for {
 		notification, err := conn.WaitForNotification(ctx)
@@ -80,13 +79,13 @@ func Run(pool *pgxpool.Pool) error {
 	}
 }
 
-func queueHandler() {
+func (ci *Instance) queueHandler() {
 	for {
 		select {
 		case job := <-jobChannel:
 			fmt.Printf("Got job :: %#v\n", job)
 
-			ran := exectueRunnerFunction(job.Function, job.Arguments)
+			ran := ci.executeRunnerFunction(job.Function, job.Arguments)
 			if !ran {
 				fmt.Printf("Job failed\n")
 			} else {
