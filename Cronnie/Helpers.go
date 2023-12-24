@@ -3,18 +3,24 @@ package Cronnie
 import (
 	"context"
 	"github.com/jackc/pgx/v5"
+	"time"
 )
 
-func (ci *Instance) Create(functionName string, arguments map[string]string) error {
+func (ci *Instance) Create(functionName string, arguments map[string]string, when time.Time) error {
+
+	if when.IsZero() { // The initial state of a time.Time{} is 001-01-01 00:00:00
+		when = time.Now()
+	}
+
 	ctx := context.Background()
 	//language=postgresql
 	query := `
 		INSERT INTO 
-			public.jobs (id, function, arguments, created_at, completed_at)
+			public.jobs (id, function, arguments,run_at, created_at, completed_at)
 		VALUES 
-		    (DEFAULT, $1, $2, now(), null);`
+		    (DEFAULT, $1, $2, $3,now(), null);`
 
-	_, e := ci.conn.Query(ctx, query, functionName, arguments)
+	_, e := ci.conn.Query(ctx, query, functionName, arguments, when)
 	return e
 }
 
@@ -34,6 +40,5 @@ func (ci *Instance) MarkCompleted(id int) error {
 	`
 
 	_, e := ci.conn.Query(ci.ctx, q, id)
-
 	return e
 }

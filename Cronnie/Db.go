@@ -31,6 +31,7 @@ func createJobsTable(conn *pgxpool.Pool) error {
 		id           serial,
 		function     varchar(128) not null,
 		arguments    json,
+		run_at       timestamp,
 		created_at   timestamp,
 		completed_at timestamp
 	);`

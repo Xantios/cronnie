@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 )
 
 func ExampleJobHandler(args map[string]string) bool {
@@ -39,14 +40,17 @@ func main() {
 
 	// Create a job
 	// This is a small convenience function, feel free to do an insert
-	e := cron.Create("example", map[string]string{
+
+	// Run NOW
+	cron.Create("example", map[string]string{
 		"arg_1": "This is the first argument",
 		"arg_2": "This is the second argument",
-	})
+	}, time.Time{})
 
-	if e != nil {
-		fmt.Printf("Cant create job. something wrong with your database? Error :: %s\n", e)
-	}
+	// run in minute
+	cron.Create("example", map[string]string{
+		"example_2": "this functions runs in a minute",
+	}, time.Now().Add(time.Minute))
 
 	// Example CLI runner
 	fmt.Println("Running job worker ")

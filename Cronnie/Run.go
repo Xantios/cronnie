@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"strings"
 	"time"
 )
 
@@ -18,6 +17,7 @@ type JobModel struct {
 	ID          int
 	Function    string
 	Arguments   map[string]string
+	RunAt       pgtype.Timestamp
 	CreatedAt   pgtype.Timestamp
 	CompletedAt pgtype.Timestamp
 }
@@ -134,7 +134,7 @@ func (ci *Instance) crashRecovery() error {
 
 	for jobs.Next() {
 		item := JobModel{}
-		err = jobs.Scan(&item.ID, &item.Function, &item.Arguments, &item.CreatedAt, &item.CompletedAt)
+		err = jobs.Scan(&item.ID, &item.Function, &item.Arguments, &item.RunAt, &item.CreatedAt, &item.CompletedAt)
 		if err != nil {
 			ci.logger.Printf("Error while unmarshalling job in crash recovery :: %s\n", err)
 			return err
@@ -153,6 +153,13 @@ func (ci *Instance) queueHandler() {
 		case job := <-jobChannel:
 			ci.logger.Printf("Got job :: %#v\n", job)
 
+			// Check if we should run now, or set a reminder
+			if !time.Now().After(job.RunAt.Time) {
+				fmt.Printf("Set Reminder to run at %#v\n", job.RunAt)
+				setReminder(job)
+				continue
+			}
+
 			ran := ci.executeRunnerFunction(job.Function, job.Arguments)
 			if !ran {
 				ci.logger.Printf("Error while running job. \n")
@@ -165,4 +172,12 @@ func (ci *Instance) queueHandler() {
 			}
 		}
 	}
+}
+
+func setReminder(job JobModel) {
+	timeout := time.Until(job.RunAt.Time)
+	go func() {
+		time.Sleep(timeout)
+		jobChannel <- job
+	}()
 }
