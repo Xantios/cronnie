@@ -4,13 +4,15 @@ import (
 	"context"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
+	"time"
 )
 
 type Instance struct {
-	ctx    context.Context
-	conn   *pgxpool.Pool
-	jobMap map[string]Job
-	logger *log.Logger
+	ctx           context.Context
+	conn          *pgxpool.Pool
+	jobMap        map[string]Job
+	logger        *log.Logger
+	keepCompleted time.Duration
 }
 
 func New(config *Config) (Instance, error) {
@@ -18,6 +20,7 @@ func New(config *Config) (Instance, error) {
 	var instance Instance
 
 	instance.ctx = context.Background()
+	instance.keepCompleted = config.KeepCompleted
 
 	// check if we have a direct connection set or if we have a connection string to connect with
 	if config.Connection == nil && config.Uri != "" {

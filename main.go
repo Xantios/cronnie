@@ -23,7 +23,8 @@ func main() {
 	logger := log.Default()
 
 	config := &Cronnie.Config{
-		Uri: "host=db user=postgres password=EcArEmp7YTDqCk8Yl61RQEZnLF9oXnjE dbname=app port=5432 sslmode=disable TimeZone=Europe/Amsterdam",
+		// TimeZone=Europe/Amsterdam
+		Uri: "host=db user=postgres password=EcArEmp7YTDqCk8Yl61RQEZnLF9oXnjE dbname=app port=5432 sslmode=disable",
 		JobMap: map[string]Cronnie.Job{
 			"example": ExampleJobHandler,
 		},

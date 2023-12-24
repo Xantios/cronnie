@@ -23,3 +23,17 @@ func (ci *Instance) GetJobs() (pgx.Rows, error) {
 	rows, err := ci.conn.Query(ctx, "SELECT * FROM jobs WHERE completed_at is null")
 	return rows, err
 }
+
+func (ci *Instance) MarkCompleted(id int) error {
+
+	// language=postgresql
+	q := `
+		UPDATE jobs 
+		SET completed_at = now()
+		WHERE id = $1
+	`
+
+	_, e := ci.conn.Query(ci.ctx, q, id)
+
+	return e
+}

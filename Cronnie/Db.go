@@ -32,7 +32,7 @@ func createJobsTable(conn *pgxpool.Pool) error {
 		function     varchar(128) not null,
 		arguments    json,
 		created_at   timestamp,
-		completed_at date
+		completed_at timestamp
 	);`
 
 	ctx := context.Background()

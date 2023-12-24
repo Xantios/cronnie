@@ -3,9 +3,16 @@ package Cronnie
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"strings"
+	"time"
 )
+
+type JobNotification struct {
+	Data JobModel `json:"data"`
+}
 
 type JobModel struct {
 	ID          int
@@ -25,28 +32,24 @@ func (ci *Instance) Run() error {
 
 	ctx := context.Background()
 
+	// Setup garbage collection
+	if ci.keepCompleted == 0 {
+		ci.keepCompleted = time.Minute * 20
+	}
+
+	ci.logger.Printf("Keeping old items for %#vs \n", ci.keepCompleted.Seconds())
+
+	// Run GC
+	go ci.garbageCollector()
+
 	// Convert pool connection to singular connection
 	conf := ci.conn.Config()
 	conn, e := pgx.Connect(ctx, conf.ConnString())
 
-	// Populate cache if recovering from crash
-	jobs, err := ci.GetJobs()
-	if err != nil {
-		return err
-	}
-
-	for jobs.Next() {
-		item := JobModel{}
-		err = jobs.Scan(&item.ID, &item.Function, &item.Arguments, &item.CreatedAt, &item.CompletedAt)
-		if err != nil {
-			return err
-		}
-
-		ci.logger.Printf("Got item from crash-recovery. %#v\n", item)
-		jobChannel <- item
-	}
-
+	// Run crash recovery
+	e = ci.crashRecovery()
 	if e != nil {
+		ci.logger.Printf("Error while running crash recovery \n")
 		return e
 	}
 
@@ -128,6 +131,20 @@ func (ci *Instance) crashRecovery() error {
 	if err != nil {
 		return err
 	}
+
+	for jobs.Next() {
+		item := JobModel{}
+		err = jobs.Scan(&item.ID, &item.Function, &item.Arguments, &item.CreatedAt, &item.CompletedAt)
+		if err != nil {
+			ci.logger.Printf("Error while unmarshalling job in crash recovery :: %s\n", err)
+			return err
+		}
+
+		ci.logger.Printf("Got item from crash-recovery. %#v\n", item)
+		jobChannel <- item
+	}
+
+	return nil
 }
 
 func (ci *Instance) queueHandler() {
@@ -141,6 +158,10 @@ func (ci *Instance) queueHandler() {
 				ci.logger.Printf("Error while running job. \n")
 			} else {
 				ci.logger.Printf("Successfully ran job. \n")
+				e := ci.MarkCompleted(job.ID)
+				if e != nil {
+					ci.logger.Printf("Job ran successfully but the update to the DB failed with error %s\n ", e)
+				}
 			}
 		}
 	}
