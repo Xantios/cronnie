@@ -1,4 +1,4 @@
-module Cronnie
+module github.com/xantios/cronnie
 
 go 1.21.1
 

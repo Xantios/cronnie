@@ -1,8 +1,8 @@
 package main
 
 import (
-	"Cronnie/Cronnie"
 	"fmt"
+	"github.com/xantios/cronnie"
 	"log"
 	"os"
 	"time"
