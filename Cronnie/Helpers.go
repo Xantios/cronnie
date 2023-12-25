@@ -8,11 +8,12 @@ import (
 
 func (ci *Instance) Create(functionName string, arguments map[string]string, when time.Time) error {
 
+	ctx := context.Background()
+
 	if when.IsZero() { // The initial state of a time.Time{} is 001-01-01 00:00:00
 		when = time.Now()
 	}
 
-	ctx := context.Background()
 	//language=postgresql
 	query := `
 		INSERT INTO 
@@ -41,4 +42,12 @@ func (ci *Instance) MarkCompleted(id int) error {
 
 	_, e := ci.conn.Query(ci.ctx, q, id)
 	return e
+}
+
+func setReminder(job JobModel) {
+	timeout := time.Until(job.RunAt.Time)
+	go func() {
+		time.Sleep(timeout)
+		jobChannel <- job
+	}()
 }

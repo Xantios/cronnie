@@ -128,11 +128,3 @@ func (ci *Instance) queueHandler() {
 		}
 	}
 }
-
-func setReminder(job JobModel) {
-	timeout := time.Until(job.RunAt.Time)
-	go func() {
-		time.Sleep(timeout)
-		jobChannel <- job
-	}()
-}
